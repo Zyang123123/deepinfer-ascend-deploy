@@ -23,7 +23,20 @@ quay.io/ascend/vllm-ascend:v0.30.0rc2-a5-openeuler
 
 容器需使用 **host 网络**，能访问8张卡、宿主驱动、模型目录和本机 `/etc/hccl_rootinfo.json`；历史配置使用500 GiB `/dev/shm`，宿主内存约1.5 TiB。镜像本身不包含本文后续补丁。
 
-**已有 `dsv4.1_deepinfer` 容器的机器，直接进入：**
+**首次部署：在宿主机创建容器。** 将补丁包放到宿主机当前目录后执行：
+
+```bash
+unzip deepinfer-ascend-deploy.zip
+IMAGE='quay.io/ascend/vllm-ascend:v0.30.0rc2-a5-openeuler'
+docker pull "$IMAGE"  # 本地已有镜像时可跳过，也可使用本地 image ID
+bash deepinfer-ascend-deploy/scripts/docker_start.sh "$IMAGE" dsv4.1_deepinfer
+```
+
+脚本需要两个参数：镜像和容器名。仓库根目录也提供同名 `docker_start.sh`，可直接执行 `bash docker_start.sh "$IMAGE" dsv4.1_deepinfer`。已有同名容器时跳过创建，不删除或覆盖原容器。
+
+脚本来自用户提供的 `/mnt/nfs_share/home/j00930424/docker_start.sh`；保留 8 卡、host 网络/PID、500g 共享内存及宿主挂载。仅修正参数提示、给变量加引号，并去掉重复的 npu-smi 挂载；原文保存在包内 `assets/docker_start.original.sh`。执行前核对宿主设备和挂载路径，尤其 `/usr/lib64` 必须与容器兼容。
+
+**创建完成或已有 `dsv4.1_deepinfer` 容器时，进入并检查：**
 
 ```bash
 docker exec -it dsv4.1_deepinfer bash
@@ -32,7 +45,7 @@ test -s /etc/hccl_rootinfo.json
 test -s /home/weights/DeepSeek-V4.1-Flash-1017/config.json
 ```
 
-8张卡必须空闲。没有上述容器时，先按镜像部署具备这些映射的容器；创建示例见附件 `references/environment.md`，不要复制其他机器的 EID 拓扑文件。
+推理前8张卡必须空闲。该启动脚本没有挂载 `/etc/hccl_rootinfo.json`；若检查失败，需按当前机器配置生成或提供正确的本机拓扑文件，再继续推理，不要复制其他机器的 EID。创建容器本身不代表通信已验证。
 
 **以下命令均在容器内执行。**
 
@@ -163,5 +176,4 @@ python scripts/run_benchmark_suite.py
 补丁来源、精确镜像digest、数值证据及详细原因均保留在附件中。换机器时先核对型号/核数、驱动/CANN和拓扑，不能只根据“都是昇腾”判断兼容。
 
 
-
-完整下载：[指南＋补丁脚本完整包](DeepInfer_快速部署包.zip)
+完整下载：[指南＋补丁脚本完整包](DeepInfer_快速部署包.zip)。
