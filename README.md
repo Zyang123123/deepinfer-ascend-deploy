@@ -154,7 +154,7 @@ python scripts/run_benchmark_suite.py
 
 三组分别为 `4K+2K / 400请求 / 并发200`、`64K+1K / 48 / 12`、`128K+1K / 32 / 8`。结果保存为 `logs/suite-*/results.csv` 和 JSON。
 
-**验证范围：**此前固定批200请求的4K+2K已跑通；上述新三组截至2026-10-26尚未上机完成，不代表长上下文已验收。首次部署优先完成第4节。
+**验证范围：**2026-10-26 已在既定机器与模型上完成上述三组闭环测试，实际请求数/最大并发为 400/200、48/12、32/8，均成功且无测量期新增 JIT 编译。首次部署仍应先完成第4节。
 
 ## 常见问题：直接按这张表处理
 
@@ -177,3 +177,16 @@ python scripts/run_benchmark_suite.py
 
 
 完整下载：[指南＋补丁脚本完整包](DeepInfer_快速部署包.zip)。
+
+## 性能指标更新（AISBench 对齐）
+
+可直接查看 [性能脚本](scripts/benchmark_configurable.py)、[三组入口](scripts/run_benchmark_suite.py)、[重算导出脚本](scripts/export_aisbench_aligned.py)、[使用说明](CONFIGURABLE_BENCHMARK.md) 和 [公式对照](AISBENCH_FORMULAS.md)。展开脚本与两个部署 ZIP 中的对应文件一致。
+
+- 请求频率与 QPS 均为成功请求数除以整场耗时；提交阶段频率另列。
+- Max Concurrency 对应配置上限；实际观测峰值另列。
+- 单独输出 Input、Output 和 Total Token Throughput；Total = Input + Output。
+- 删除中文结果表中的“实测E2E时间(s)”及同义旧列；内部仍使用整场耗时计算吞吐。
+- AISBench 英文对照表保留 Benchmark Duration；单请求 E2EL 与整场时长不同。
+- 对齐的是 Default/total 公式，离线引擎时间不等于 HTTP 客户端时间。
+
+在安装完整部署包后的仓库中运行 `python scripts/test_configurable_benchmark.py` 可验证统计逻辑。已有原始三组记录时，可运行 `python scripts/export_aisbench_aligned.py logs/<suite目录>` 生成对齐版 CSV/JSON，无需重跑推理。
